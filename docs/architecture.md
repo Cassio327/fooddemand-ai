@@ -20,9 +20,11 @@ flowchart LR
 
 ## Leakage controls
 
-Target lags and rolling means are shifted before calculation. Same-day transactions are not used;
+Target lags and rolling means use **calendar dates** with `asfreq("D")`, not row positions.
+Missing calendar dates remain missing, and today's target never appears in its own features.
+Same-day transactions are not used;
 transactions are moved to the following calendar day as `transactions_lag_1`. Oil price is forward
-filled only from earlier observations and shifted one observation before merge. Calendar holidays
+filled across closed markets and shifted one **calendar day** before being used. Calendar holidays
 are known in advance and can be used directly.
 
 ## Serving contract

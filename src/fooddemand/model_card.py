@@ -25,7 +25,10 @@ tags:
 
 # FoodDemand AI
 
-Retail demand forecasting model built from the Kaggle Store Sales competition data.
+Retail demand forecasting model. Dataset provenance: **{report.get('data_source', 'unverified')}**.
+
+**Important:** synthetic/unverified scores are demonstration-only and must not be
+advertised as real Kaggle performance.
 
 ## Intended use
 
