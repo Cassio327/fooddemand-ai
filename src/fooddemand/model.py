@@ -11,7 +11,9 @@ from fooddemand.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES
 
 
 def build_model() -> TransformedTargetRegressor:
-    numeric_pipeline = Pipeline([("imputer", SimpleImputer(strategy="median", keep_empty_features=True))])
+    numeric_pipeline = Pipeline(
+        [("imputer", SimpleImputer(strategy="median", keep_empty_features=True))]
+    )
     categorical_pipeline = Pipeline(
         [
             ("imputer", SimpleImputer(strategy="most_frequent", keep_empty_features=True)),
