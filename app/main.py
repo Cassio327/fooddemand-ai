@@ -14,7 +14,7 @@ MODEL_PATH = Path(os.getenv("MODEL_PATH", "models/fooddemand.joblib"))
 
 app = FastAPI(
     title="FoodDemand AI",
-    version="1.0.0",
+    version="1.0.1",
     description="Retail demand forecasting API with a versioned ML artifact.",
 )
 
@@ -24,11 +24,11 @@ class ForecastRequest(BaseModel):
     store_nbr: int = Field(ge=1)
     family: str = Field(min_length=1)
     onpromotion: int = Field(ge=0)
-    lag_7: float = Field(ge=0)
-    lag_14: float = Field(ge=0)
-    lag_28: float = Field(ge=0)
-    rolling_mean_7: float = Field(ge=0)
-    rolling_mean_28: float = Field(ge=0)
+    lag_7: float = Field(ge=0, allow_inf_nan=False)
+    lag_14: float = Field(ge=0, allow_inf_nan=False)
+    lag_28: float = Field(ge=0, allow_inf_nan=False)
+    rolling_mean_7: float = Field(ge=0, allow_inf_nan=False)
+    rolling_mean_28: float = Field(ge=0, allow_inf_nan=False)
     store_type: str = "UNKNOWN"
     city: str = "UNKNOWN"
     state: str = "UNKNOWN"
@@ -60,7 +60,19 @@ def _payload(request: ForecastRequest) -> dict:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "model_ready": MODEL_PATH.exists(), "model_path": str(MODEL_PATH)}
+    return {"status": "ok", "model_file_present": MODEL_PATH.exists()}
+
+
+@app.get("/ready")
+def ready() -> dict:
+    """Readiness requires a loadable artifact, not merely a file on disk."""
+    try:
+        artifact = get_artifact()
+        if not hasattr(artifact.get("model"), "predict"):
+            raise ValueError("Invalid model artifact")
+    except (FileNotFoundError, ValueError, OSError, ImportError, KeyError, AttributeError) as exc:
+        raise HTTPException(status_code=503, detail="Model not ready") from exc
+    return {"status": "ready"}
 
 
 @app.get("/model")

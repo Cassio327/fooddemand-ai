@@ -11,13 +11,13 @@ data:
 
 demo:
 	python scripts/generate_demo_data.py --output-dir data/demo
-	python -m fooddemand.train --data-dir data/demo --backtest-folds 2 --validation-days 10
+	python -m fooddemand.train --data-dir data/demo --data-source synthetic --backtest-folds 2 --validation-days 10
 
 eda:
 	python -m fooddemand.eda --data-dir data/raw
 
 train:
-	python -m fooddemand.train --data-dir data/raw --backtest-folds 3 --validation-days 16
+	python -m fooddemand.train --data-dir data/raw --data-source kaggle-store-sales --backtest-folds 3 --validation-days 16
 
 portfolio:
 	bash scripts/run_portfolio.sh

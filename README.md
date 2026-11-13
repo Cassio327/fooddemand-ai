@@ -26,13 +26,13 @@ problem.
 
 ## What the system demonstrates
 
-- demand lags at 7, 14 and 28 days;
+- calendar-day demand lags at 7, 14 and 28 days, robust to missing dates;
 - rolling historical means built after shifting the target;
 - calendar and promotion signals;
 - store metadata, national holidays, lagged oil price and lagged transactions;
 - rolling-origin temporal backtesting;
 - median and 7-day seasonal-naive baselines;
-- log-target `HistGradientBoostingRegressor`;
+- log-target `HistGradientBoostingRegressor` with native categorical splits;
 - RMSLE, MAE and WAPE;
 - versioned `joblib` artifact with training metadata;
 - FastAPI single and batch inference endpoints;
@@ -104,7 +104,11 @@ reports/figures/top_families.png
 ```
 
 The repository intentionally does **not** hard-code or invent benchmark numbers. Real metrics appear
-only after the official dataset is executed.
+only after the official dataset is executed. Synthetic test reports are labeled as synthetic
+and blocked from Hugging Face publication.
+
+The `--max-rows` option retains whole dates instead of dropping arbitrary product/store series.
+Serving exposes `GET /ready` for model readiness in addition to `GET /health` for liveness.
 
 ### 4. Run the API
 
@@ -113,7 +117,8 @@ make api
 ```
 
 - Swagger: `http://127.0.0.1:8000/docs`
-- Health: `GET /health`
+- Liveness: `GET /health`
+- Readiness: `GET /ready`
 - Model metadata: `GET /model`
 - Single prediction: `POST /predict`
 - Batch prediction: `POST /predict/batch`
@@ -208,8 +213,8 @@ docs/                        architecture, evaluation, decisions and deployment
 - The serving API receives historical lag features instead of maintaining an online feature store.
 - Real benchmark metrics and the Hugging Face artifact require executing the official Kaggle data.
 
-These limitations are explicit because a reliable ML portfolio should distinguish what was measured
-from what is planned.
+These limitations distinguish verified work from future work. Local Docker Compose ports are
+bound to `127.0.0.1` to avoid exposing this unauthenticated demo over the local network.
 
 ## License
 

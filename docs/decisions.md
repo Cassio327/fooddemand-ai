@@ -11,11 +11,12 @@ specialized accelerator.
 The estimator is wrapped in `TransformedTargetRegressor` with `log1p/expm1`. Retail demand is skewed,
 and the transformation aligns better with RMSLE while keeping the serving output in the original unit.
 
-## Ordinal categorical encoding
+## Native categorical splits
 
 Dense one-hot encoding can become memory-heavy on millions of rows. Ordinal encoding keeps the
-feature matrix compact. Tree-based boosting can split on the encoded values, though this is still an
-approximation; CatBoost/LightGBM are reasonable future comparisons.
+feature matrix compact, but categorical codes have no intrinsic numerical meaning. The estimator
+now enables **native categorical splits** for the encoded categorical columns. CatBoost and
+LightGBM remain useful future benchmark candidates.
 
 ## Honest metrics
 

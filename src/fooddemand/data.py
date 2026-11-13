@@ -27,8 +27,17 @@ def load_competition_data(data_dir: str | Path, max_rows: int | None = None) -> 
 
     sales = pd.read_csv(train_path)
     sales["date"] = pd.to_datetime(sales["date"], errors="raise")
-    if max_rows is not None and len(sales) > max_rows:
-        sales = sales.sort_values("date").tail(max_rows).copy()
+    if max_rows is not None:
+        if max_rows < 1:
+            raise ValueError("max_rows must be positive")
+        if len(sales) > max_rows:
+            counts = sales.groupby("date").size().sort_index()
+            within_limit = counts.iloc[::-1].cumsum() <= max_rows
+            if not within_limit.any():
+                raise ValueError("max_rows is smaller than one complete trading day")
+            oldest_included = counts.iloc[::-1].index[within_limit][-1]
+            # Avoid truncating a trading day, which would drop arbitrary series.
+            sales = sales.loc[sales["date"] >= oldest_included].copy()
 
     return CompetitionData(
         sales=sales,

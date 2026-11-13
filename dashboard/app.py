@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date
 from pathlib import Path
 
 import requests
@@ -16,6 +17,8 @@ st.caption("Demand forecasting demo backed by the FastAPI inference service.")
 
 if REPORT_PATH.exists():
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    if report.get("data_source") != "kaggle-store-sales":
+        st.warning("Synthetic/unverified metrics: integration demo only, not Kaggle results.")
     aggregate = report.get("backtest", {}).get("aggregate", {})
     model = aggregate.get("model", {})
     baseline = aggregate.get("seasonal_naive", {})
@@ -28,9 +31,10 @@ else:
     st.info("Run the training pipeline to populate real evaluation metrics.")
 
 st.subheader("Try a forecast")
+st.caption("This demo requires historical lag inputs; it is not a recursive multi-day forecast.")
 with st.form("forecast"):
     col1, col2, col3 = st.columns(3)
-    forecast_date = col1.date_input("Date")
+    forecast_date = col1.date_input("Date", value=date(2017, 8, 16))
     store_nbr = col2.number_input("Store", min_value=1, value=1)
     family = col3.text_input("Product family", value="GROCERY I")
     onpromotion = st.number_input("Products on promotion", min_value=0, value=0)

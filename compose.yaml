@@ -6,7 +6,7 @@ services:
     volumes:
       - ./models:/app/models:ro
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   dashboard:
     build:
@@ -20,4 +20,4 @@ services:
     depends_on:
       - api
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"

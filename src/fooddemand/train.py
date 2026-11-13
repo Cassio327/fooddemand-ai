@@ -98,7 +98,10 @@ def train_project(
     max_rows: int | None = None,
     backtest_folds: int = 3,
     validation_days: int = 16,
+    data_source: str = "unverified",
 ) -> tuple[dict, dict]:
+    if data_source not in {"unverified", "kaggle-store-sales", "synthetic"}:
+        raise ValueError("Invalid data source")
     data = load_competition_data(data_dir, max_rows=max_rows)
     frame = build_training_frame(
         data.sales, data.stores, data.oil, data.holidays, data.transactions
@@ -140,7 +143,13 @@ def train_project(
     }
 
     report = {
-        "dataset": "Kaggle Store Sales - Time Series Forecasting",
+        "dataset": (
+            "Kaggle Store Sales - Time Series Forecasting"
+            if data_source == "kaggle-store-sales"
+            else "Synthetic integration fixture" if data_source == "synthetic"
+            else "Unverified user-provided dataset"
+        ),
+        "data_source": data_source,
         "evaluation": "rolling one-step chronological backtesting",
         "rows": {"raw": int(len(data.sales)), "model_ready": int(len(frame))},
         "date_range": {
@@ -168,7 +177,8 @@ def train_project(
     artifact = {
         "model": final_model,
         "metadata": {
-            "version": "1.0.0",
+            "version": "1.0.1",
+            "data_source": data_source,
             "features": MODEL_FEATURES,
             "evaluation": report["evaluation"],
             "backtest_aggregate": aggregate,
@@ -202,6 +212,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-rows", type=int, default=None)
     parser.add_argument("--backtest-folds", type=int, default=3)
     parser.add_argument("--validation-days", type=int, default=16)
+    parser.add_argument(
+        "--data-source",
+        choices=["unverified", "synthetic", "kaggle-store-sales"],
+        default="unverified",
+        help="Explicitly label the input dataset; do not publish synthetic metrics as real.",
+    )
     parser.add_argument("--mlflow", action="store_true")
     return parser.parse_args()
 
@@ -213,6 +229,7 @@ def main() -> None:
         max_rows=args.max_rows,
         backtest_folds=args.backtest_folds,
         validation_days=args.validation_days,
+        data_source=args.data_source,
     )
     save_outputs(artifact, report, args.model_out, args.report_out, args.model_card_out)
     if args.mlflow:
