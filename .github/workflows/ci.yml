@@ -31,6 +31,7 @@ jobs:
           python scripts/generate_demo_data.py --output-dir /tmp/fooddemand-demo --days 90
           python -m fooddemand.train \
             --data-dir /tmp/fooddemand-demo \
+            --data-source synthetic \
             --backtest-folds 2 \
             --validation-days 10 \
             --model-out /tmp/fooddemand.joblib \

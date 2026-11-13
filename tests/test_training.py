@@ -14,6 +14,7 @@ def test_complete_training_pipeline(tmp_path: Path):
     assert artifact["metadata"]["data_source"] == "synthetic"
     assert report["data_source"] == "synthetic"
     assert report["dataset"] == "Synthetic integration fixture"
+    assert report["holdout"]["model"] == report["backtest"]["results"][-1]["model"]
     assert "model" in artifact
     assert report["rows"]["model_ready"] > 0
     assert len(report["backtest"]["results"]) == 2

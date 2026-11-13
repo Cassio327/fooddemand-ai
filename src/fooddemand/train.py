@@ -121,10 +121,12 @@ def train_project(
             }
         )
 
-    final_cutoff = frame["date"].max() - pd.Timedelta(days=validation_days - 1)
-    final_train = frame[frame["date"] < final_cutoff].copy()
-    final_validation = frame[frame["date"] >= final_cutoff].copy()
-    holdout = evaluate_split(final_train, final_validation)
+    # The final backtest fold is exactly the holdout window. Reuse its
+    # metrics instead of fitting the same model twice.
+    holdout_metrics = {
+        name: fold_metrics[-1][name]
+        for name in ("median_baseline", "seasonal_naive", "model")
+    }
 
     # Refit on every model-ready row for the serving artifact.
     final_model = build_model()
@@ -164,7 +166,7 @@ def train_project(
             "aggregate": aggregate,
             "improvement_vs_seasonal_naive": improvement,
         },
-        "holdout": holdout.metrics,
+        "holdout": holdout_metrics,
         "limitations": [
             (
                 "Backtesting is rolling one-step evaluation and can use actual earlier "
