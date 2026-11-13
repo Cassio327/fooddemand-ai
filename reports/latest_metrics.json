@@ -1,0 +1,149 @@
+{
+  "dataset": "Kaggle Store Sales - Time Series Forecasting",
+  "data_source": "kaggle-store-sales",
+  "evaluation": "rolling one-step chronological backtesting",
+  "rows": {
+    "raw": 598752,
+    "model_ready": 547074
+  },
+  "date_range": {
+    "start": "2016-10-11",
+    "end": "2017-08-15"
+  },
+  "features": [
+    "store_nbr",
+    "onpromotion",
+    "year",
+    "month",
+    "day",
+    "day_of_week",
+    "day_of_year",
+    "is_weekend",
+    "lag_7",
+    "lag_14",
+    "lag_28",
+    "rolling_mean_7",
+    "rolling_mean_28",
+    "cluster",
+    "oil_price_lag_1",
+    "transactions_lag_1",
+    "is_national_holiday",
+    "family",
+    "store_type",
+    "city",
+    "state"
+  ],
+  "backtest": {
+    "folds": 3,
+    "validation_days": 16,
+    "results": [
+      {
+        "fold": 1,
+        "train_end": "2017-06-28",
+        "validation_start": "2017-06-29",
+        "validation_end": "2017-07-14",
+        "median_baseline": {
+          "rmsle": 0.8078507245958118,
+          "mae": 123.16285448745441,
+          "wape": 0.2540476854320931
+        },
+        "seasonal_naive": {
+          "rmsle": 0.515060537184904,
+          "mae": 93.13382120395623,
+          "wape": 0.19210688003923757
+        },
+        "model": {
+          "rmsle": 0.37225072232118417,
+          "mae": 54.939347975124754,
+          "wape": 0.11332324384906572
+        }
+      },
+      {
+        "fold": 2,
+        "train_end": "2017-07-14",
+        "validation_start": "2017-07-15",
+        "validation_end": "2017-07-30",
+        "median_baseline": {
+          "rmsle": 0.8225107402599956,
+          "mae": 117.60159987878788,
+          "wape": 0.2441067282010944
+        },
+        "seasonal_naive": {
+          "rmsle": 0.5102587896553759,
+          "mae": 68.15532139462331,
+          "wape": 0.14147063077614166
+        },
+        "model": {
+          "rmsle": 0.38138423612780503,
+          "mae": 57.80582791978877,
+          "wape": 0.11998809148004042
+        }
+      },
+      {
+        "fold": 3,
+        "train_end": "2017-07-30",
+        "validation_start": "2017-07-31",
+        "validation_end": "2017-08-15",
+        "median_baseline": {
+          "rmsle": 0.8638981528528556,
+          "mae": 108.14522082986814,
+          "wape": 0.231503484963072
+        },
+        "seasonal_naive": {
+          "rmsle": 0.5693670635937593,
+          "mae": 100.23036455751964,
+          "wape": 0.2145603709172551
+        },
+        "model": {
+          "rmsle": 0.38696426617313545,
+          "mae": 68.29053077420413,
+          "wape": 0.14618765159375233
+        }
+      }
+    ],
+    "aggregate": {
+      "median_baseline": {
+        "rmsle": 0.8314198725695543,
+        "mae": 116.30322506537014,
+        "wape": 0.24321929953208646
+      },
+      "seasonal_naive": {
+        "rmsle": 0.5315621301446797,
+        "mae": 87.17316905203306,
+        "wape": 0.18271262724421145
+      },
+      "model": {
+        "rmsle": 0.3801997415407082,
+        "mae": 60.34523555637255,
+        "wape": 0.12649966230761947
+      }
+    },
+    "improvement_vs_seasonal_naive": {
+      "rmsle": 0.2847501355350012,
+      "mae": 0.30775448211188816,
+      "wape": 0.3076578000351252
+    }
+  },
+  "holdout": {
+    "median_baseline": {
+      "rmsle": 0.8638981528528556,
+      "mae": 108.14522082986814,
+      "wape": 0.231503484963072
+    },
+    "seasonal_naive": {
+      "rmsle": 0.5693670635937593,
+      "mae": 100.23036455751964,
+      "wape": 0.2145603709172551
+    },
+    "model": {
+      "rmsle": 0.38696426617313545,
+      "mae": 68.29053077420413,
+      "wape": 0.14618765159375233
+    }
+  },
+  "limitations": [
+    "Backtesting is rolling one-step evaluation and can use actual earlier validation observations in lag features.",
+    "A production multi-step forecast requires recursive or direct horizon forecasting.",
+    "The public Ecuadorian grocery dataset is a portfolio proxy, not iFood data."
+  ]
+}

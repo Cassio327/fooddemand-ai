@@ -1,0 +1,11 @@
+{
+  "rows": 3000888,
+  "date_start": "2013-01-01",
+  "date_end": "2017-08-15",
+  "stores": 54,
+  "families": 33,
+  "zero_sales_share": 0.3129506999261552,
+  "promotion_share": 0.20371603338745065,
+  "sales_mean": 357.77574911261877,
+  "sales_median": 11.0
+}
