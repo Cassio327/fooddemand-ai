@@ -18,11 +18,46 @@ FoodDemand AI forecasts retail product demand from historical sales. It was desi
 **AI/ML engineering portfolio project**, not as a notebook-only experiment: the repository includes
 leakage-safe feature engineering, chronological backtesting, baselines, a versioned model artifact,
 a REST API, a Streamlit demo, Docker, automated tests, CI, optional MLflow tracking and a Hugging
-Face publishing path.
+Face model publication.
 
 The dataset is the public **Store Sales - Time Series Forecasting** Kaggle competition. The data is
 from Corporación Favorita in Ecuador and is used only as a public proxy for a real retail forecasting
 problem.
+
+## Verified Kaggle benchmark
+
+FoodDemand AI was trained and evaluated on **real Store Sales data**, using a
+chronological **rolling one-step** backtest.
+
+| Measure | Result |
+| --- | ---: |
+| Rows loaded (recent-data subset) | **598,752** |
+| Model-ready rows after historical features | **547,074** |
+| Validation | **3 folds × 16 days** |
+| Historical median baseline RMSLE | 0.8314 |
+| Seasonal naive (7-day) RMSLE | 0.5316 |
+| **FoodDemand AI RMSLE** | **0.3802** |
+| **Relative RMSLE reduction vs seasonal naive** | **28.48%** |
+| Seasonal naive vs model MAE | 87.1732 → **60.3452** |
+| Seasonal naive vs model WAPE | 18.27% → **12.65%** |
+
+Metrics are the **unweighted average of the three folds**. The final fold's model RMSLE
+was **0.3870**. These results evaluate next-day predictions with updated historical
+observations available across the validation window; they **do not** represent a
+fully recursive 16-day forecast or an official Kaggle leaderboard submission.
+
+**Dataset:** [Kaggle Store Sales - Time Series Forecasting](https://www.kaggle.com/competitions/store-sales-time-series-forecasting).
+This experiment used 598,752 of the dataset's 3,000,888 training rows because full-data
+training exceeded the available RAM on the local laptop.
+
+**Evidence:** [benchmark report](reports/benchmark_600k.json) ·
+[latest metrics](reports/latest_metrics.json) ·
+[model card](reports/MODEL_CARD.md).
+
+**Published artifact:** [cassiohfs/fooddemand-ai on Hugging Face](https://huggingface.co/cassiohfs/fooddemand-ai).
+The Hugging Face repository provides the trained model and documentation; it is
+**not** a hosted inference endpoint. The API and dashboard can be run locally
+using the instructions below.
 
 ## What the system demonstrates
 
@@ -103,9 +138,15 @@ reports/figures/daily_sales.png
 reports/figures/top_families.png
 ```
 
-The repository intentionally does **not** hard-code or invent benchmark numbers. Real metrics appear
-only after the official dataset is executed. Synthetic test reports are labeled as synthetic
-and blocked from Hugging Face publication.
+The verified benchmark above was generated from a subset of the official Kaggle data using:
+
+```bash
+python -m fooddemand.train --data-dir data/raw --data-source kaggle-store-sales \
+  --max-rows 600000 --backtest-folds 3 --validation-days 16
+```
+
+Synthetic smoke-test reports are labeled separately and must not be presented as real
+benchmark performance.
 
 The `--max-rows` option retains whole dates instead of dropping arbitrary product/store series.
 Serving exposes `GET /ready` for model readiness in addition to `GET /health` for liveness.
@@ -169,17 +210,22 @@ export MLFLOW_TRACKING_URI=http://127.0.0.1:5000
 python -m fooddemand.train --data-dir data/raw --mlflow
 ```
 
-## Publish the model to Hugging Face
+## Published Hugging Face model
 
-After a verified real-data run:
+The trained real-data artifact and its Model Card are available at
+**[cassiohfs/fooddemand-ai](https://huggingface.co/cassiohfs/fooddemand-ai)**.
+
+To publish an updated, verified model from your own terminal:
 
 ```bash
 pip install -e ".[publish]"
-export HF_TOKEN=YOUR_PRIVATE_TOKEN
-python scripts/publish_huggingface.py --repo-id Cassio327/fooddemand-ai
+hf auth login
+export HF_TOKEN="$(python -c 'from huggingface_hub import get_token; print(get_token() or "")')"
+python scripts/publish_huggingface.py --repo-id cassiohfs/fooddemand-ai
 ```
 
-Never commit the token.
+Keep credentials private. `joblib.load` deserializes pickle-based data, so only
+load model artifacts from trusted sources.
 
 ## Repository structure
 
@@ -211,7 +257,8 @@ docs/                        architecture, evaluation, decisions and deployment
 - The evaluation is rolling one-step, not a fully recursive fixed-horizon forecast.
 - The public Ecuadorian grocery dataset is not representative of iFood's private data.
 - The serving API receives historical lag features instead of maintaining an online feature store.
-- Real benchmark metrics and the Hugging Face artifact require executing the official Kaggle data.
+- Published metrics come from a **598,752-row recent-data subset**, not the entire training set.
+- The Hugging Face repository hosts the model artifact, not an always-on prediction API.
 
 These limitations distinguish verified work from future work. Local Docker Compose ports are
 bound to `127.0.0.1` to avoid exposing this unauthenticated demo over the local network.
