@@ -83,7 +83,9 @@ def enrich_with_auxiliary_data(
         store_frame = stores.copy().rename(columns={"type": "store_type"})
         wanted = ["store_nbr", "city", "state", "store_type", "cluster"]
         _require_columns(store_frame, wanted)
-        result = result.merge(store_frame[wanted], on="store_nbr", how="left", validate="many_to_one")
+        result = result.merge(
+            store_frame[wanted], on="store_nbr", how="left", validate="many_to_one"
+        )
 
     if oil is not None and not oil.empty:
         oil_frame = oil.copy()

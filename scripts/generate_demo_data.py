@@ -49,7 +49,11 @@ def generate(output_dir: Path, days: int = 120) -> None:
     for store in (1, 2, 3):
         for index, current_date in enumerate(dates):
             transactions.append(
-                {"date": current_date.date(), "store_nbr": store, "transactions": 500 + store * 20 + index}
+                {
+                    "date": current_date.date(),
+                    "store_nbr": store,
+                    "transactions": 500 + store * 20 + index,
+                }
             )
     pd.DataFrame(transactions).to_csv(output_dir / "transactions.csv", index=False)
 

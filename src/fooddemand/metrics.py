@@ -28,4 +28,8 @@ def wape(y_true, y_pred) -> float:
 
 
 def regression_metrics(y_true, y_pred) -> dict[str, float]:
-    return {"rmsle": rmsle(y_true, y_pred), "mae": mae(y_true, y_pred), "wape": wape(y_true, y_pred)}
+    return {
+        "rmsle": rmsle(y_true, y_pred),
+        "mae": mae(y_true, y_pred),
+        "wape": wape(y_true, y_pred),
+    }

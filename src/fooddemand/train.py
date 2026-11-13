@@ -123,6 +123,7 @@ def train_project(
     final_validation = frame[frame["date"] >= final_cutoff].copy()
     holdout = evaluate_split(final_train, final_validation)
 
+    # Refit on every model-ready row for the serving artifact.
     final_model = build_model()
     final_model.fit(frame[MODEL_FEATURES], frame["sales"].astype(float))
 
@@ -156,7 +157,10 @@ def train_project(
         },
         "holdout": holdout.metrics,
         "limitations": [
-            "Backtesting is rolling one-step evaluation and can use actual earlier validation observations in lag features.",
+            (
+                "Backtesting is rolling one-step evaluation and can use actual earlier "
+                "validation observations in lag features."
+            ),
             "A production multi-step forecast requires recursive or direct horizon forecasting.",
             "The public Ecuadorian grocery dataset is a portfolio proxy, not iFood data.",
         ],

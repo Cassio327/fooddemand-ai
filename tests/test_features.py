@@ -1,6 +1,10 @@
 import pandas as pd
 
-from fooddemand.features import add_calendar_features, add_history_features, enrich_with_auxiliary_data
+from fooddemand.features import (
+    add_calendar_features,
+    add_history_features,
+    enrich_with_auxiliary_data,
+)
 
 
 def test_calendar_features_are_created():
