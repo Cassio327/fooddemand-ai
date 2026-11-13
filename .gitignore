@@ -33,7 +33,5 @@ data/processed/*
 data/demo/
 models/*
 !models/.gitkeep
-reports/*.json
-reports/*.md
 reports/figures/*.png
 mlruns/

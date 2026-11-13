@@ -32,6 +32,9 @@ def build_inference_frame(payloads: list[dict]) -> pd.DataFrame:
         if column not in frame.columns:
             frame[column] = default
 
+    for column in ("oil_price_lag_1", "transactions_lag_1"):
+        frame[column] = pd.to_numeric(frame[column], errors="coerce")
+
     missing = sorted(set(MODEL_FEATURES) - set(frame.columns))
     if missing:
         raise ValueError(f"Missing inference features: {', '.join(missing)}")
