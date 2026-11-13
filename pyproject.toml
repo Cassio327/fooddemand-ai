@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "End-to-end retail demand forecasting with temporal validation, backtesting, FastAPI and MLOps."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "Cássio Henrique"}]
 dependencies = [
   "fastapi>=0.115,<1",

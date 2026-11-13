@@ -4,8 +4,6 @@ import argparse
 import json
 from pathlib import Path
 
-import pandas as pd
-
 from fooddemand.data import load_competition_data
 
 
