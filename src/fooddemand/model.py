@@ -36,6 +36,9 @@ def build_model() -> TransformedTargetRegressor:
         max_leaf_nodes=31,
         l2_regularization=1.0,
         random_state=42,
+        # Preprocessing outputs numeric features first, then nominal categories.
+        categorical_features=[False] * len(NUMERIC_FEATURES)
+        + [True] * len(CATEGORICAL_FEATURES),
     )
     pipeline = Pipeline([("preprocess", preprocess), ("model", estimator)])
     return TransformedTargetRegressor(regressor=pipeline, func=np.log1p, inverse_func=np.expm1)

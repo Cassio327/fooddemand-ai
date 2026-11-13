@@ -100,3 +100,10 @@ def test_negative_sales_are_rejected():
     raw.loc[0, "sales"] = -1
     with pytest.raises(ValueError, match="non-negative"):
         build_training_frame(raw)
+
+
+def test_model_uses_native_categorical_splits():
+    model = build_model().regressor
+    estimator = model.named_steps["model"]
+    flags = estimator.get_params()["categorical_features"]
+    assert flags == [False] * 17 + [True] * 4
