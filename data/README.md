@@ -1,22 +1,21 @@
 # Data
 
-This project uses the **Store Sales - Time Series Forecasting** Kaggle competition dataset.
+FoodDemand AI uses the **Store Sales - Time Series Forecasting** Kaggle competition dataset.
+Raw competition files are intentionally excluded from Git.
 
-The raw competition files are intentionally not committed to Git. After accepting the competition
-rules and configuring your Kaggle credentials, run:
+## Download
+
+1. Sign in to Kaggle and accept the competition rules.
+2. Configure the Kaggle API credentials.
+3. Run:
 
 ```bash
 pip install -e ".[data]"
 bash scripts/download_data.sh
 ```
 
-The training pipeline currently requires `data/raw/train.csv` with these columns:
+Expected files include `train.csv`, `stores.csv`, `oil.csv`, `transactions.csv` and
+`holidays_events.csv` under `data/raw/`.
 
-- `date`
-- `store_nbr`
-- `family`
-- `sales`
-- `onpromotion`
-
-Additional competition tables such as oil, holidays, transactions and store metadata are planned
-for later feature-engineering iterations.
+For tests and a no-credential demo, `scripts/generate_demo_data.py` creates a fully synthetic dataset.
+Synthetic results must never be presented as competition performance.

@@ -2,50 +2,31 @@
 
 ```mermaid
 flowchart LR
-    K[Kaggle Store Sales] --> F[Feature pipeline]
-    F --> T[Temporal split]
-    T --> B[Median baseline]
-    T --> M[HistGradientBoosting]
-    B --> E[Evaluation]
-    M --> E
-    E --> R[metrics JSON]
-    M --> A[joblib artifact]
-    A --> API[FastAPI /predict]
+    K["Kaggle Store Sales"] --> E["Leakage-safe feature pipeline"]
+    E --> BT["Rolling-origin backtesting"]
+    BT --> B1["Median baseline"]
+    BT --> B2["7-day seasonal naive"]
+    BT --> ML["Log-target HistGradientBoosting"]
+    B1 --> R["RMSLE · MAE · WAPE"]
+    B2 --> R
+    ML --> R
+    ML --> A["Versioned joblib artifact"]
+    R --> MC["Model card"]
+    A --> API["FastAPI"]
+    API --> UI["Streamlit dashboard"]
+    R -. optional .-> MF["MLflow"]
+    A -. publish .-> HF["Hugging Face"]
 ```
 
-## Forecasting design
+## Leakage controls
 
-The first iteration focuses on a clear, reproducible baseline rather than maximizing leaderboard
-score. Every row is identified by `store_nbr`, `family` and `date`.
+Target lags and rolling means are shifted before calculation. Same-day transactions are not used;
+transactions are moved to the following calendar day as `transactions_lag_1`. Oil price is forward
+filled only from earlier observations and shifted one observation before merge. Calendar holidays
+are known in advance and can be used directly.
 
-The model uses calendar, promotion and lagged demand features:
+## Serving contract
 
-- demand 7, 14 and 28 days earlier;
-- rolling mean over the previous 7 and 28 observations;
-- calendar fields such as day of week and month;
-- number of products on promotion.
-
-Historical features use `shift()` before rolling calculations, so the current day's target is never
-used as an input feature.
-
-## Validation
-
-The latest days are held out chronologically. Historical features for a validation day can use
-actual observations from earlier dates, which makes this a **rolling one-step forecasting**
-evaluation. A future iteration will add recursive multi-step backtesting to reproduce a fixed
-forecast horizon.
-
-## Baseline
-
-The comparison baseline predicts the historical median sales for each `(store_nbr, family)` pair.
-This prevents the project from presenting a model score without answering whether ML improves on a
-simple heuristic.
-
-## Next iterations
-
-1. Add oil, holiday, transaction and store metadata.
-2. Add recursive multi-step backtesting.
-3. Track experiments with MLflow.
-4. Compare tree-boosting alternatives.
-5. Publish the selected model and model card to Hugging Face.
-6. Add drift and latency monitoring for the API.
+The API expects already-computed historical features. This keeps online serving deterministic and
+makes the forecasting assumptions explicit. A production forecasting service would own a feature
+store or historical state and compute these values automatically.

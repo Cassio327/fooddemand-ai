@@ -12,26 +12,28 @@ dist/
 .venv/
 venv/
 
-# Tests and tooling
+# Tests / tools
 .pytest_cache/
 .ruff_cache/
 .coverage
 htmlcov/
 .mypy_cache/
 
-# Notebooks / editors / OS
+# Editors / OS
 .ipynb_checkpoints/
 .vscode/
 .idea/
 .DS_Store
 
-# Project data and artifacts
+# Raw and generated data
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+data/demo/
 models/*
 !models/.gitkeep
-
-# Generated reports must be reviewed before publication
 reports/*.json
+reports/*.md
+reports/figures/*.png
+mlruns/

@@ -9,7 +9,6 @@ def _as_non_negative(values) -> np.ndarray:
 
 
 def rmsle(y_true, y_pred) -> float:
-    """Root Mean Squared Logarithmic Error, matching the Kaggle competition metric."""
     truth = _as_non_negative(y_true)
     prediction = _as_non_negative(y_pred)
     return float(np.sqrt(mean_squared_log_error(truth, prediction)))
@@ -20,7 +19,6 @@ def mae(y_true, y_pred) -> float:
 
 
 def wape(y_true, y_pred) -> float:
-    """Weighted Absolute Percentage Error."""
     truth = np.asarray(y_true, dtype=float)
     prediction = np.asarray(y_pred, dtype=float)
     denominator = float(np.abs(truth).sum())
@@ -30,8 +28,4 @@ def wape(y_true, y_pred) -> float:
 
 
 def regression_metrics(y_true, y_pred) -> dict[str, float]:
-    return {
-        "rmsle": rmsle(y_true, y_pred),
-        "mae": mae(y_true, y_pred),
-        "wape": wape(y_true, y_pred),
-    }
+    return {"rmsle": rmsle(y_true, y_pred), "mae": mae(y_true, y_pred), "wape": wape(y_true, y_pred)}

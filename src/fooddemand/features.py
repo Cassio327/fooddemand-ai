@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+import numpy as np
 import pandas as pd
 
 GROUP_COLUMNS = ["store_nbr", "family"]
 LAG_DAYS = (7, 14, 28)
 ROLLING_WINDOWS = (7, 28)
 
-MODEL_FEATURES = [
+CATEGORICAL_FEATURES = ["family", "store_type", "city", "state"]
+NUMERIC_FEATURES = [
     "store_nbr",
-    "family",
     "onpromotion",
     "year",
     "month",
@@ -23,7 +24,12 @@ MODEL_FEATURES = [
     "lag_28",
     "rolling_mean_7",
     "rolling_mean_28",
+    "cluster",
+    "oil_price_lag_1",
+    "transactions_lag_1",
+    "is_national_holiday",
 ]
+MODEL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
 
 
 def _require_columns(frame: pd.DataFrame, columns: Iterable[str]) -> None:
@@ -33,7 +39,6 @@ def _require_columns(frame: pd.DataFrame, columns: Iterable[str]) -> None:
 
 
 def add_calendar_features(frame: pd.DataFrame) -> pd.DataFrame:
-    """Create deterministic calendar features from the date column."""
     _require_columns(frame, ["date"])
     result = frame.copy()
     result["date"] = pd.to_datetime(result["date"], errors="raise")
@@ -47,29 +52,103 @@ def add_calendar_features(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_history_features(frame: pd.DataFrame) -> pd.DataFrame:
-    """Create leakage-safe historical features using only earlier observations per series."""
+    """Create target-history features using only observations earlier than each row."""
     _require_columns(frame, [*GROUP_COLUMNS, "date", "sales"])
     result = frame.copy()
     result["date"] = pd.to_datetime(result["date"], errors="raise")
     result = result.sort_values([*GROUP_COLUMNS, "date"]).reset_index(drop=True)
 
     grouped = result.groupby(GROUP_COLUMNS, sort=False)["sales"]
-
     for lag in LAG_DAYS:
         result[f"lag_{lag}"] = grouped.shift(lag)
-
     for window in ROLLING_WINDOWS:
         result[f"rolling_mean_{window}"] = grouped.transform(
             lambda series: series.shift(1).rolling(window=window, min_periods=1).mean()
         )
-
     return result
 
 
-def build_training_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    """Build model-ready rows and drop dates without enough history for the longest lag."""
-    _require_columns(frame, ["date", "store_nbr", "family", "sales", "onpromotion"])
-    result = add_history_features(frame)
+def enrich_with_auxiliary_data(
+    sales: pd.DataFrame,
+    stores: pd.DataFrame | None = None,
+    oil: pd.DataFrame | None = None,
+    holidays: pd.DataFrame | None = None,
+    transactions: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """Merge competition metadata while avoiding same-day target proxies where possible."""
+    result = sales.copy()
+    result["date"] = pd.to_datetime(result["date"], errors="raise")
+
+    if stores is not None and not stores.empty:
+        store_frame = stores.copy().rename(columns={"type": "store_type"})
+        wanted = ["store_nbr", "city", "state", "store_type", "cluster"]
+        _require_columns(store_frame, wanted)
+        result = result.merge(store_frame[wanted], on="store_nbr", how="left", validate="many_to_one")
+
+    if oil is not None and not oil.empty:
+        oil_frame = oil.copy()
+        _require_columns(oil_frame, ["date", "dcoilwtico"])
+        oil_frame["date"] = pd.to_datetime(oil_frame["date"], errors="raise")
+        oil_frame = oil_frame.sort_values("date")
+        oil_frame["dcoilwtico"] = oil_frame["dcoilwtico"].ffill()
+        oil_frame["oil_price_lag_1"] = oil_frame["dcoilwtico"].shift(1)
+        result = result.merge(
+            oil_frame[["date", "oil_price_lag_1"]], on="date", how="left", validate="many_to_one"
+        )
+
+    if transactions is not None and not transactions.empty:
+        tx = transactions.copy()
+        _require_columns(tx, ["date", "store_nbr", "transactions"])
+        tx["date"] = pd.to_datetime(tx["date"], errors="raise") + pd.Timedelta(days=1)
+        tx = tx.rename(columns={"transactions": "transactions_lag_1"})
+        result = result.merge(
+            tx[["date", "store_nbr", "transactions_lag_1"]],
+            on=["date", "store_nbr"],
+            how="left",
+            validate="many_to_one",
+        )
+
+    if holidays is not None and not holidays.empty:
+        holiday_frame = holidays.copy()
+        _require_columns(holiday_frame, ["date", "locale", "transferred"])
+        holiday_frame["date"] = pd.to_datetime(holiday_frame["date"], errors="raise")
+        transferred = holiday_frame["transferred"].astype(str).str.lower().eq("true")
+        national = holiday_frame[holiday_frame["locale"].eq("National") & ~transferred]
+        holiday_dates = national[["date"]].drop_duplicates()
+        holiday_dates["is_national_holiday"] = 1
+        result = result.merge(holiday_dates, on="date", how="left", validate="many_to_one")
+
+    defaults: dict[str, object] = {
+        "store_type": "UNKNOWN",
+        "city": "UNKNOWN",
+        "state": "UNKNOWN",
+        "cluster": -1,
+        "oil_price_lag_1": np.nan,
+        "transactions_lag_1": np.nan,
+        "is_national_holiday": 0,
+    }
+    for column, default in defaults.items():
+        if column not in result.columns:
+            result[column] = default
+        elif isinstance(default, str):
+            result[column] = result[column].fillna(default)
+        elif column == "is_national_holiday":
+            result[column] = result[column].fillna(default)
+
+    result["is_national_holiday"] = result["is_national_holiday"].astype("int8")
+    return result
+
+
+def build_training_frame(
+    sales: pd.DataFrame,
+    stores: pd.DataFrame | None = None,
+    oil: pd.DataFrame | None = None,
+    holidays: pd.DataFrame | None = None,
+    transactions: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    _require_columns(sales, ["date", "store_nbr", "family", "sales", "onpromotion"])
+    result = enrich_with_auxiliary_data(sales, stores, oil, holidays, transactions)
+    result = add_history_features(result)
     result = add_calendar_features(result)
     result = result.dropna(subset=[f"lag_{max(LAG_DAYS)}"]).reset_index(drop=True)
     return result

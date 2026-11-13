@@ -1,0 +1,23 @@
+services:
+  api:
+    build: .
+    environment:
+      MODEL_PATH: /app/models/fooddemand.joblib
+    volumes:
+      - ./models:/app/models:ro
+    ports:
+      - "8000:8000"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    environment:
+      API_URL: http://api:8000
+      REPORT_PATH: /app/reports/latest_metrics.json
+    volumes:
+      - ./reports:/app/reports:ro
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"

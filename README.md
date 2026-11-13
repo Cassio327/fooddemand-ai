@@ -2,9 +2,11 @@
 
 # FoodDemand AI
 
-### End-to-end retail demand forecasting with temporal validation and a production-style API
+### End-to-end retail demand forecasting: data → backtesting → model → API → dashboard
 
-`Python` · `Pandas` · `scikit-learn` · `FastAPI` · `Docker` · `GitHub Actions`
+[![CI](https://github.com/Cassio327/fooddemand-ai/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Cassio327/fooddemand-ai/actions/workflows/ci.yml)
+
+`Python` · `Pandas` · `scikit-learn` · `Time Series` · `FastAPI` · `Docker` · `MLflow` · `Hugging Face`
 
 </div>
 
@@ -12,178 +14,203 @@
 
 ## Why this project exists
 
-FoodDemand AI is a portfolio project for forecasting product demand from historical retail sales.
-The goal is not only to train a model, but to demonstrate an **engineering workflow around ML**:
-leakage-safe features, temporal validation, comparison against a simple baseline, reproducible
-training, automated tests and an inference API.
+FoodDemand AI forecasts retail product demand from historical sales. It was designed as an
+**AI/ML engineering portfolio project**, not as a notebook-only experiment: the repository includes
+leakage-safe feature engineering, chronological backtesting, baselines, a versioned model artifact,
+a REST API, a Streamlit demo, Docker, automated tests, CI, optional MLflow tracking and a Hugging
+Face publishing path.
 
-The first version uses the public **Store Sales - Time Series Forecasting** dataset from Kaggle.
+The dataset is the public **Store Sales - Time Series Forecasting** Kaggle competition. The data is
+from Corporación Favorita in Ecuador and is used only as a public proxy for a real retail forecasting
+problem.
 
-## What is implemented
+## What the system demonstrates
 
-- calendar features and promotion signals;
 - demand lags at 7, 14 and 28 days;
-- rolling means built only from previous observations;
-- chronological holdout validation;
-- median baseline per store/product family;
-- `HistGradientBoostingRegressor` model;
-- RMSLE, MAE and WAPE evaluation;
-- persisted model artifact with `joblib`;
-- FastAPI `/predict` and `/health` endpoints;
-- Pytest test suite and Ruff linting;
-- GitHub Actions CI;
-- Docker image running as a non-root user.
+- rolling historical means built after shifting the target;
+- calendar and promotion signals;
+- store metadata, national holidays, lagged oil price and lagged transactions;
+- rolling-origin temporal backtesting;
+- median and 7-day seasonal-naive baselines;
+- log-target `HistGradientBoostingRegressor`;
+- RMSLE, MAE and WAPE;
+- versioned `joblib` artifact with training metadata;
+- FastAPI single and batch inference endpoints;
+- Streamlit demo dashboard;
+- optional MLflow experiment tracking;
+- model-card generation and Hugging Face publication script;
+- unit, API and end-to-end synthetic tests in GitHub Actions;
+- API and dashboard Docker images.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    D["Kaggle sales data"] --> F["Feature engineering"]
-    F --> S["Temporal split"]
-    S --> B["Median baseline"]
-    S --> ML["Gradient boosting model"]
-    B --> E["RMSLE · MAE · WAPE"]
-    ML --> E
+    D["Kaggle data"] --> F["Feature engineering"]
+    F --> BT["Rolling backtest"]
+    BT --> BL["Baselines"]
+    BT --> ML["Gradient boosting"]
+    BL --> M["RMSLE · MAE · WAPE"]
+    ML --> M
     ML --> A["Model artifact"]
+    M --> C["Model card"]
     A --> API["FastAPI"]
+    API --> UI["Streamlit"]
+    M -.-> TRACK["MLflow"]
+    A -.-> HF["Hugging Face"]
 ```
 
-See [the architecture notes](docs/architecture.md) for the evaluation assumptions and roadmap.
+More details: [architecture](docs/architecture.md) · [evaluation](docs/evaluation.md) ·
+[engineering decisions](docs/decisions.md) · [deployment](docs/deployment.md)
 
 ## Quick start
 
-### 1. Create the environment
+### 1. Install
 
 ```bash
 git clone https://github.com/Cassio327/fooddemand-ai.git
 cd fooddemand-ai
-
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[dev,data]"
+pip install -e ".[dev,portfolio]"
 ```
 
-### 2. Download the dataset
+### 2. Get the official data
 
-Accept the Kaggle competition rules and configure your Kaggle credentials, then run:
+After accepting the Kaggle competition rules and configuring the Kaggle API:
 
 ```bash
-bash scripts/download_data.sh
+make data
 ```
 
-The raw files stay under `data/raw/` and are not committed to the repository.
+Raw files remain ignored by Git.
 
-### 3. Train
-
-For a faster local experiment using the most recent 500,000 rows:
+### 3. Generate EDA + train + backtest
 
 ```bash
-python -m fooddemand.train \
-  --data data/raw/train.csv \
-  --max-rows 500000 \
-  --validation-days 28
+make portfolio
 ```
 
-For a full-data experiment, omit `--max-rows`.
-
-Training writes:
+Outputs:
 
 ```text
 models/fooddemand.joblib
 reports/latest_metrics.json
+reports/MODEL_CARD.md
+reports/eda_summary.json
+reports/figures/daily_sales.png
+reports/figures/top_families.png
 ```
 
-The report includes both the baseline and ML metrics so improvements can be measured explicitly.
+The repository intentionally does **not** hard-code or invent benchmark numbers. Real metrics appear
+only after the official dataset is executed.
 
-### 4. Run tests
+### 4. Run the API
 
 ```bash
-pytest -q
-ruff check .
+make api
 ```
 
-### 5. Serve predictions
+- Swagger: `http://127.0.0.1:8000/docs`
+- Health: `GET /health`
+- Model metadata: `GET /model`
+- Single prediction: `POST /predict`
+- Batch prediction: `POST /predict/batch`
 
-After training:
+### 5. Run the dashboard
 
 ```bash
-uvicorn app.main:app --reload
+make dashboard
 ```
 
-Open:
+Open `http://127.0.0.1:8501`.
 
-- API docs: `http://127.0.0.1:8000/docs`
-- health: `http://127.0.0.1:8000/health`
+### 6. Run everything with Docker
 
-Example request:
-
-```json
-{
-  "date": "2017-08-16",
-  "store_nbr": 1,
-  "family": "GROCERY I",
-  "onpromotion": 14,
-  "lag_7": 220.0,
-  "lag_14": 215.0,
-  "lag_28": 208.0,
-  "rolling_mean_7": 218.4,
-  "rolling_mean_28": 210.7
-}
+```bash
+docker compose up --build
 ```
 
-## Metrics
+API: `http://127.0.0.1:8000` · Dashboard: `http://127.0.0.1:8501`
 
-This repository does **not** publish invented model scores. Real metrics should only be added after
-running the pipeline on the downloaded competition data. The evaluation report is generated at
-`reports/latest_metrics.json`.
+## No Kaggle credentials? Run the full smoke demo
 
-The main competition-oriented metric is **RMSLE**. MAE and WAPE are also reported to make errors
-easier to interpret operationally.
+```bash
+make demo
+```
+
+This creates synthetic retail data and exercises the same end-to-end training pipeline. **Synthetic
+scores are integration-test evidence only and must not be presented as real model performance.**
+
+## Evaluation design
+
+Random splitting is avoided. The model is evaluated on multiple chronological windows and compared
+with a 7-day seasonal-naive forecast and a historical-median baseline.
+
+Historical target features are shifted before use, so the current target never becomes its own
+feature. Same-day transactions are also excluded; only previous-day transaction information can be
+used.
+
+The main competition-oriented metric is RMSLE. MAE and WAPE are reported for operational
+interpretability.
+
+## MLflow
+
+```bash
+pip install -e ".[tracking]"
+mlflow server --host 127.0.0.1 --port 5000
+export MLFLOW_TRACKING_URI=http://127.0.0.1:5000
+python -m fooddemand.train --data-dir data/raw --mlflow
+```
+
+## Publish the model to Hugging Face
+
+After a verified real-data run:
+
+```bash
+pip install -e ".[publish]"
+export HF_TOKEN=YOUR_PRIVATE_TOKEN
+python scripts/publish_huggingface.py --repo-id Cassio327/fooddemand-ai
+```
+
+Never commit the token.
 
 ## Repository structure
 
 ```text
-app/                       FastAPI service
-data/                      dataset instructions; raw files ignored
-docs/                      design and evaluation notes
-models/                    local trained artifacts; ignored
-scripts/                    data acquisition helpers
-src/fooddemand/             ML package
-tests/                     deterministic unit/smoke tests
-.github/workflows/ci.yml   lint and test pipeline
-Dockerfile                 non-root API image
+app/                         FastAPI service
+dashboard/                   Streamlit portfolio demo
+src/fooddemand/
+  data.py                    competition data loader
+  features.py                leakage-safe features and data enrichment
+  backtest.py                rolling-origin windows
+  model.py                   preprocessing + estimator
+  metrics.py                 RMSLE, MAE and WAPE
+  train.py                   end-to-end training and evaluation
+  predict.py                 artifact loading and inference
+  eda.py                     reproducible EDA outputs
+  model_card.py              Hugging Face model-card generation
+scripts/
+  download_data.sh           Kaggle data acquisition
+  generate_demo_data.py      deterministic synthetic CI/demo dataset
+  run_portfolio.sh           complete real-data portfolio run
+  publish_huggingface.py     model publishing helper
+tests/                       feature, metric, backtest, training and API tests
+docs/                        architecture, evaluation, decisions and deployment
+.github/workflows/ci.yml     lint, tests, E2E smoke training and Docker builds
 ```
 
-## Engineering choices
+## Current limitations
 
-**Why temporal validation?** Random train/test splits leak future patterns into the past and can
-produce misleading scores for forecasting problems.
+- The evaluation is rolling one-step, not a fully recursive fixed-horizon forecast.
+- The public Ecuadorian grocery dataset is not representative of iFood's private data.
+- The serving API receives historical lag features instead of maintaining an online feature store.
+- Real benchmark metrics and the Hugging Face artifact require executing the official Kaggle data.
 
-**Why a baseline?** A model should beat a simple heuristic before its complexity is justified.
-
-**Why lagged features?** Recent demand is usually more informative than calendar variables alone.
-The implementation shifts the target before rolling calculations so the current target does not
-leak into its own prediction.
-
-**Why no leaderboard score yet?** Reproducibility matters more than claiming a result that has not
-been rerun and verified. Experiment outputs will be added as the project evolves.
-
-## Roadmap
-
-- [x] Reproducible training pipeline
-- [x] Leakage-safe historical features
-- [x] Temporal validation and baseline comparison
-- [x] Automated tests and CI
-- [x] FastAPI inference service
-- [x] Docker image
-- [ ] Add holidays, oil, transactions and store metadata
-- [ ] Recursive multi-step backtesting
-- [ ] MLflow experiment tracking
-- [ ] Compare additional boosting models
-- [ ] Publish the selected model and model card on Hugging Face
-- [ ] Add an interactive forecasting dashboard
+These limitations are explicit because a reliable ML portfolio should distinguish what was measured
+from what is planned.
 
 ## License
 
-MIT. Dataset usage remains subject to the Kaggle competition rules.
+MIT for the source code. Dataset usage is governed separately by the Kaggle competition rules.
