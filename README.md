@@ -8,6 +8,8 @@
 
 `Python` · `Pandas` · `scikit-learn` · `Time Series` · `FastAPI` · `Docker` · `MLflow` · `Hugging Face`
 
+**[Published model & Model Card (Hugging Face)](https://huggingface.co/cassiohfs/fooddemand-ai)** · **[Verified Kaggle benchmark](reports/benchmark_600k.json)** · **[API documentation (run locally)](#4-run-the-api)**
+
 </div>
 
 ---
@@ -59,6 +61,24 @@ The Hugging Face repository provides the trained model and documentation; it is
 **not** a hosted inference endpoint. The API and dashboard can be run locally
 using the instructions below.
 
+## Demo
+
+**Current status: the app and API were tested locally; an edited public demo video has not yet been uploaded.**
+
+> **Video / GIF placeholder:** add the recording URL here after uploading the final FoodDemand AI demo. Do not use a broken link or a sample animation presented as a real run.
+
+<!-- TODO: Replace this comment with a public video/GIF link and, optionally,
+     a preview image, once the final application recording is published. -->
+
+**Suggested 60–90 s recording:**
+
+1. Open the Streamlit dashboard at `http://127.0.0.1:8501` and show the real benchmark summary.
+2. Submit an illustrative demand-forecast request using lag and promotion inputs; show the returned estimate.
+3. Open FastAPI Swagger at `http://127.0.0.1:8000/docs` and show a successful `POST /predict` request.
+4. Show this repository and the [published model artifact on Hugging Face](https://huggingface.co/cassiohfs/fooddemand-ai).
+
+The interactive request demonstrates **model serving**, not model accuracy: performance evidence comes from the chronological backtesting reports above. This dashboard requires the API and model artifact to be available locally; it is not a hosted public demo.
+
 ## What the system demonstrates
 
 - calendar-day demand lags at 7, 14 and 28 days, robust to missing dates;
@@ -92,11 +112,12 @@ flowchart LR
     A --> API["FastAPI"]
     API --> UI["Streamlit"]
     M -.-> TRACK["MLflow"]
-    A -.-> HF["Hugging Face"]
+    A -.-> HF["Published Hugging Face model"]
 ```
 
 More details: [architecture](docs/architecture.md) · [evaluation](docs/evaluation.md) ·
-[engineering decisions](docs/decisions.md) · [deployment](docs/deployment.md)
+[engineering decisions](docs/decisions.md) · [deployment](docs/deployment.md) ·
+[trained model + Model Card on Hugging Face](https://huggingface.co/cassiohfs/fooddemand-ai)
 
 ## Quick start
 
